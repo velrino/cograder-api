@@ -1,99 +1,354 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CoGrader API - Real-Time Image Processing Pipeline
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API for the CoGrader Full-Stack Challenge. A production-grade NestJS application that processes images asynchronously using BullMQ, with Firebase integration for storage and real-time updates.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🎯 Overview
 
-## Description
+This API provides a robust image processing pipeline that:
+- Accepts image URLs for processing
+- Downloads and validates images
+- Applies transformations (resize, grayscale, watermark)
+- Uploads results to Firebase Storage
+- Provides real-time job status updates via Firebase Realtime Database
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🏗️ Architecture
 
-## Project setup
+### Tech Stack
+- **Framework**: NestJS (TypeScript)
+- **Queue System**: BullMQ + Redis
+- **Database**: Firebase Realtime Database
+- **Storage**: Firebase Storage
+- **Image Processing**: Sharp
+- **Validation**: class-validator
 
-```bash
-$ pnpm install
+### Key Components
+
+```
+src/
+├── modules/
+│   ├── jobs/              # Job creation and management
+│   │   ├── dto/           # Data transfer objects
+│   │   ├── jobs.controller.ts
+│   │   └── jobs.service.ts
+│   ├── queue/             # BullMQ queue management
+│   │   ├── queue.service.ts
+│   │   └── redis-health.service.ts
+│   └── images/            # Image processing worker
+│       └── processing/
+│           └── processing.service.ts
+└── shared/
+    └── google/firebase/   # Firebase integration
+        ├── firebase-init.service.ts
+        ├── firebase-database.service.ts
+        └── storage/
+            └── firebase-storage.service.ts
 ```
 
-## Compile and run the project
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- pnpm (or npm/yarn)
+- Redis (running locally or remote)
+- Firebase project with:
+  - Realtime Database enabled
+  - Storage bucket created
+  - Service account credentials
+
+### Installation
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# Install dependencies
+pnpm install
 ```
 
-## Run tests
+### Environment Configuration
+
+Create a `.env` file in the root directory:
+
+```env
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Firebase Admin SDK
+# Get from Firebase Console > Project Settings > Service Accounts
+GOOGLE_FIREBASE_ADMIN_SDK={"type":"service_account","project_id":"...","private_key":"..."}
+
+# Server Configuration
+PORT=8080
+NODE_ENV=development
+```
+
+### Firebase Storage Rules
+
+Update your Firebase Storage rules to allow public read access:
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read: if true;  // Public read access
+      allow write: if false; // Write only via backend
+    }
+  }
+}
+```
+
+### Running the Application
 
 ```bash
-# unit tests
-$ pnpm run test
+# Development mode (with hot reload)
+pnpm run start:dev
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+# Production mode
+pnpm run build
+pnpm run start:prod
 ```
 
-## Deployment
+The API will be available at `http://localhost:8080`
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 📡 API Endpoints
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Health Check
+
+#### Check Redis Connection
+```bash
+GET /api/queue/health
+```
+
+**Response:**
+```json
+{
+  "redis": {
+    "connected": true,
+    "status": "healthy"
+  }
+}
+```
+
+### Jobs
+
+#### Create a New Job
+```bash
+POST /api/jobs
+Content-Type: application/json
+
+{
+  "imageUrl": "https://example.com/image.jpg"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "imageUrl": "https://example.com/image.jpg",
+  "status": "pending",
+  "progress": 0,
+  "createdAt": "2025-10-29T17:30:00.000Z",
+  "updatedAt": "2025-10-29T17:30:00.000Z"
+}
+```
+
+#### Get Job Status
+```bash
+GET /api/jobs/:id
+```
+
+**Response:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "imageUrl": "https://example.com/image.jpg",
+  "status": "completed",
+  "progress": 100,
+  "resultUrl": "https://storage.googleapis.com/...",
+  "createdAt": "2025-10-29T17:30:00.000Z",
+  "updatedAt": "2025-10-29T17:30:15.000Z"
+}
+```
+
+#### List All Jobs
+```bash
+GET /api/jobs
+```
+
+## 🔄 Image Processing Pipeline
+
+1. **Job Creation** (`POST /api/jobs`)
+   - Validates image URL format
+   - Creates job record in Firebase
+   - Adds job to BullMQ queue
+
+2. **Worker Processing** (Automatic)
+   - Downloads image from URL (30s timeout, 10MB max)
+   - Validates format (PNG, JPG, WEBP)
+   - Applies transformations:
+     - Resize to 800x600 (maintains aspect ratio)
+     - Convert to grayscale
+     - Add "Processed by CoGrader" watermark
+   - Uploads to Firebase Storage
+   - Updates job status at each step
+
+3. **Real-time Updates**
+   - Firebase Realtime Database tracks progress
+   - Frontend receives updates via Firebase listeners
+   - No polling required
+
+## 🧪 Testing
+
+### Manual Testing with cURL
+
+#### Valid Image
+```bash
+curl -X POST http://localhost:8080/api/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"imageUrl": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4"}'
+```
+
+#### Invalid URL (404)
+```bash
+curl -X POST http://localhost:8080/api/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"imageUrl": "https://httpstat.us/404"}'
+```
+
+#### Non-Image URL
+```bash
+curl -X POST http://localhost:8080/api/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"imageUrl": "https://www.google.com"}'
+```
+
+#### Multiple Jobs Simultaneously
+```bash
+for i in {1..5}; do
+  curl -X POST http://localhost:8080/api/jobs \
+    -H "Content-Type: application/json" \
+    -d '{"imageUrl": "https://picsum.photos/1200/800"}' &
+done
+wait
+```
+
+### Unit Tests
+```bash
+# Run unit tests
+pnpm run test
+
+# Run with coverage
+pnpm run test:cov
+
+# Run e2e tests
+pnpm run test:e2e
+```
+
+## 🔍 Error Handling
+
+The API handles the following error cases:
+
+- **404 Not Found**: Image URL returns 404
+- **Invalid Format**: URL doesn't point to PNG/JPG/WEBP
+- **Image Too Large**: File exceeds 10MB limit
+- **Network Timeout**: Download takes longer than 30s
+- **Transformation Failed**: Sharp processing error
+- **Storage Upload Failed**: Firebase Storage error
+
+All errors return appropriate HTTP status codes and error messages.
+
+## 📊 Monitoring
+
+### Application Logs
+
+Structured logging format:
+```
+{TYPE}.{ServiceName}.{MethodName}.{Action} { context }
+```
+
+Example:
+```
+INFO.ImageProcessingService.processImage.success {
+  jobId: '550e8400-...',
+  imageUrl: 'https://...',
+  message: 'Image processing completed'
+}
+```
+
+### Redis Connection Status
+
+Check at startup:
+```
+✅ Redis connection established { host: 'localhost', port: 6379 }
+✅ Firebase Admin SDK initialized
+✅ Firebase Realtime Database ready
+✅ Firebase Storage ready { bucketName: 'test-gograder.firebasestorage.app' }
+```
+
+## 🚢 Deployment
+
+### Google Cloud Run (Recommended)
 
 ```bash
-$ pnpm install -g mau
-$ mau deploy
+# Build Docker image
+docker build -t cograder-api .
+
+# Deploy to Cloud Run
+gcloud run deploy cograder-api \
+  --image cograder-api \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Environment Variables for Production
 
-## Resources
+Set these in your deployment platform:
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_PASSWORD`
+- `GOOGLE_FIREBASE_ADMIN_SDK`
+- `NODE_ENV=production`
+- `PORT=8080`
 
-Check out a few resources that may come in handy when working with NestJS:
+## 📝 Key Design Decisions
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+1. **BullMQ over other queue systems**
+   - Robust Redis-based queue
+   - Automatic retries with exponential backoff
+   - Job progress tracking
+   - Concurrent processing
 
-## Support
+2. **Firebase for real-time updates**
+   - WebSocket-based real-time listeners
+   - No polling required
+   - Automatic reconnection
+   - Built-in offline support
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+3. **Sharp for image processing**
+   - Fast, memory-efficient
+   - Native bindings (no ImageMagick dependency)
+   - Stream-based processing
+   - Wide format support
 
-## Stay in touch
+4. **Modular architecture**
+   - Separation of concerns (jobs, queue, images, firebase)
+   - Easy to test and maintain
+   - Scalable design
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 🤝 Contributing
 
-## License
+This is a challenge project. For the actual implementation:
+1. Focus on code correctness over speed
+2. Anticipate edge cases and errors
+3. Write clear, maintainable code
+4. Document key decisions
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 📄 License
+
+UNLICENSED - Challenge project for CoGrader
+
+---
+
+**Built with ❤️ using NestJS, BullMQ, and Firebase**
