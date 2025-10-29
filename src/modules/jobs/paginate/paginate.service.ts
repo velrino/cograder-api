@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue, Job } from 'bull';
+import { Job } from 'bull';
 import { PaginateJobsDto, PaginateJobsResponseDto } from './paginate.dto';
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
-import { QueuesEnum } from 'src/modules/queue/queue.interface';
 import {
   IImageProcessingJob,
   QueueService,
