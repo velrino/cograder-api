@@ -146,22 +146,33 @@ export class ImageProcessingService {
 
   private async transformImage(imageBuffer: Buffer): Promise<Buffer> {
     try {
-      // Apply transformations: resize, grayscale, add watermark text
-      const transformedImage = await sharp(imageBuffer)
+      // First, resize and convert to grayscale
+      const resizedImage = sharp(imageBuffer)
         .resize(800, 600, {
           fit: 'inside',
           withoutEnlargement: true,
         })
-        .grayscale()
+        .grayscale();
+
+      // Get the actual dimensions after resize
+      const metadata = await resizedImage.metadata();
+      const width = metadata.width || 800;
+      const height = metadata.height || 600;
+
+      // Create watermark SVG with correct dimensions
+      const watermarkSvg = Buffer.from(
+        `<svg width="${width}" height="${height}">
+          <text x="50%" y="95%" font-size="20" fill="rgba(255,255,255,0.5)" text-anchor="middle">
+            Processed by CoGrader
+          </text>
+        </svg>`,
+      );
+
+      // Apply watermark with composite
+      const transformedImage = await resizedImage
         .composite([
           {
-            input: Buffer.from(
-              `<svg width="800" height="600">
-                <text x="50%" y="95%" font-size="20" fill="rgba(255,255,255,0.5)" text-anchor="middle">
-                  Processed by CoGrader
-                </text>
-              </svg>`,
-            ),
+            input: watermarkSvg,
             gravity: 'southeast',
           },
         ])
