@@ -5,7 +5,7 @@ import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 import {
   IImageProcessingJob,
   QueueService,
-} from 'src/modules/queue/queue.service';
+} from 'src/shared/queue/queue.service';
 
 @Injectable()
 export class PaginateJobsService {

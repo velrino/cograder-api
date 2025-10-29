@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { FirebaseModule } from './shared/google/firebase/firebase.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JobsModule } from './modules/jobs/jobs.module';
-import { QueueModule } from './modules/queue/queue.module';
+import { HealthCheckModule } from './modules/health-check/health-check.module';
 import { BullModule } from '@nestjs/bull';
+import { QueueModule } from './shared/queue/queue.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { BullModule } from '@nestjs/bull';
     FirebaseModule,
     JobsModule,
     QueueModule,
+    HealthCheckModule,
   ],
   controllers: [],
   providers: [],

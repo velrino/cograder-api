@@ -2,7 +2,7 @@ import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { QueuesEnum } from './queue.interface';
 import { QueueService } from './queue.service';
-import { ImagesModule } from '../images/images.module';
+import { ImagesModule } from 'src/modules/images/images.module';
 
 @Global()
 @Module({

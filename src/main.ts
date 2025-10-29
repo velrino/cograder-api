@@ -5,6 +5,10 @@ import { apiReference } from '@scalar/nestjs-api-reference';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  process.env.TZ = 'America/Sao_Paulo';
+
+  process.env.LAST_DEPLOY = new Date().toISOString();
+
   const app = await NestFactory.create(AppModule);
 
   const port = process.env.PORT || 8888;

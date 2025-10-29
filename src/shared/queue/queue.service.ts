@@ -93,4 +93,21 @@ export class QueueService {
       throw error;
     }
   }
+
+  async ping(): Promise<boolean> {
+    try {
+      const client = this.imageProcessingQueue.client;
+      const result = await client.ping();
+      return result === 'PONG';
+    } catch (error) {
+      Log(
+        LogType.ERROR,
+        QueueService.name,
+        'ping',
+        LogAction.FAILED,
+        { error },
+      );
+      return false;
+    }
+  }
 }

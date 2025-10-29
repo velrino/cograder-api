@@ -7,14 +7,14 @@ import { FirebaseDatabasePath } from 'src/shared/google/firebase/database/databa
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 import * as sharp from 'sharp';
 import { randomUUID } from 'node:crypto';
-import { IImageProcessingJob } from 'src/modules/queue/queue.service';
-import { QueuesEnum } from 'src/modules/queue/queue.interface';
 import { JobStatus } from 'src/modules/jobs/job.interface';
 import {
   ImageProcessingMessage,
   ImageProcessingError,
 } from 'src/shared/constants/messages.enum';
 import { ImageValidatorService } from '../validator/validator.service';
+import { QueuesEnum } from 'src/shared/queue/queue.interface';
+import { IImageProcessingJob } from 'src/shared/queue/queue.service';
 
 @Injectable()
 @Processor(QueuesEnum.IMAGE_PROCESSING)

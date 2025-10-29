@@ -59,6 +59,28 @@ export class FirebaseService implements OnModuleInit {
   }
 
   /**
+   * Ping Firebase Realtime Database to check connection
+   */
+  async ping(): Promise<boolean> {
+    try {
+      const database = admin.database();
+      const ref = database.ref('.info/connected');
+      const snapshot = await ref.once('value');
+      const connected = snapshot.val();
+      return connected === true;
+    } catch (error) {
+      Log(
+        LogType.ERROR,
+        FirebaseService.name,
+        'ping',
+        LogAction.FAILED,
+        { error },
+      );
+      return false;
+    }
+  }
+
+  /**
    * Cleanup Firebase connections on module destroy
    */
   async onModuleDestroy(): Promise<void> {
