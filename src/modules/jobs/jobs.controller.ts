@@ -1,14 +1,14 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+import { CreateJobService } from './create/create.service';
+import { CreateJobDto } from './create/create.dto';
+import { JobResponseDto } from './job.dto';
 
-@Controller('/apis/jobs')
+@Controller('api/jobs')
 export class JobsController {
-  constructor(private mutateBookingService: MutateBookingService) {}
+  constructor(private readonly createJobService: CreateJobService) {}
 
   @Post()
-  async createBooking(
-    @Req() req: CustomRequest,
-    @Body() body: MutateBookingDto,
-  ) {
-    return this.mutateBookingService.create(req, body);
+  async createJob(@Body() body: CreateJobDto): Promise<JobResponseDto> {
+    return this.createJobService.createJob(body);
   }
 }
