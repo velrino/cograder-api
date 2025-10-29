@@ -136,15 +136,16 @@ export class ImageProcessingService {
   private async transformImage(imageBuffer: Buffer): Promise<Buffer> {
     try {
       // First, resize and convert to grayscale
-      const resizedImage = sharp(imageBuffer)
+      const resizedBuffer = await sharp(imageBuffer)
         .resize(800, 600, {
           fit: 'inside',
           withoutEnlargement: true,
         })
-        .grayscale();
+        .grayscale()
+        .toBuffer();
 
       // Get the actual dimensions after resize
-      const metadata = await resizedImage.metadata();
+      const metadata = await sharp(resizedBuffer).metadata();
       const width = metadata.width || 800;
       const height = metadata.height || 600;
 
@@ -158,7 +159,7 @@ export class ImageProcessingService {
       );
 
       // Apply watermark with composite
-      const transformedImage = await resizedImage
+      const transformedImage = await sharp(resizedBuffer)
         .composite([
           {
             input: watermarkSvg,
