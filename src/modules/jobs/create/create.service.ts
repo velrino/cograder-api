@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { QueueService } from 'src/modules/queue/queue.service';
-import { FirebaseDatabaseService } from 'src/shared/google/firebase/firebase-database.service';
-import { FirebasePathsEnum } from 'src/shared/google/firebase/firebase.enum';
+import { FirebaseDatabaseService } from 'src/shared/google/firebase/database/database.service';
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 import { CreateJobDto } from './create.dto';
 import { JobResponseDto } from '../job.dto';
 import { JobStatus } from '../job.interface';
+import { FirebaseDatabasePath } from 'src/shared/google/firebase/database/database.enum';
 
 @Injectable()
 export class CreateJobService {
@@ -32,7 +32,7 @@ export class CreateJobService {
 
       // Save to Firebase Realtime Database
       await this.firebaseDatabase.save(
-        FirebasePathsEnum.IMAGES,
+        FirebaseDatabasePath.IMAGES,
         jobId,
         jobData,
       );

@@ -1,15 +1,15 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import * as admin from 'firebase-admin';
-import {
-  FirebasePathsEnum,
-  IFirebaseListenForNewRecords,
-} from './firebase.enum';
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 import { Environments, GetEnvironment } from 'src/shared/general/enviroment';
+import {
+  FirebaseDatabasePath,
+  IFirebaseDatabaseListenForNewRecords,
+} from './database.enum';
 
 @Injectable()
-export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
+export class FirebaseDatabaseService implements OnModuleInit {
   public database: admin.database.Database;
   private readonly workerId = randomUUID();
 
@@ -17,23 +17,16 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     try {
-      if (!process.env.GOOGLE_FIREBASE_ADMIN_SDK) {
-        throw new Error(
-          'GOOGLE_FIREBASE_ADMIN_SDK environment variable is not set',
-        );
-      }
-
-      const serviceAccount = JSON.parse(process.env.GOOGLE_FIREBASE_ADMIN_SDK);
-
-      // Check if the app is already initialized to avoid errors in tests/reloads
-      if (!admin.apps.length) {
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-          databaseURL: 'https://test-gograder-default-rtdb.firebaseio.com/',
-        });
-      }
-
+      // Firebase is already initialized by FirebaseInitService
       this.database = admin.database();
+
+      Log(
+        LogType.INFO,
+        FirebaseDatabaseService.name,
+        this.onModuleInit.name,
+        LogAction.SUCCESS,
+        { message: '✅ Firebase Realtime Database ready' },
+      );
     } catch (error) {
       const about = 'Firebase Realtime Database initialization error';
       Log(
@@ -47,25 +40,8 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async onModuleDestroy(): Promise<void> {
-    try {
-      // Cleanup Firebase connections
-      if (admin.apps.length) {
-        await Promise.all(admin.apps.map((app) => app?.delete()));
-      }
-    } catch (error) {
-      Log(
-        LogType.ERROR,
-        FirebaseDatabaseService.name,
-        this.onModuleDestroy.name,
-        LogAction.FAILED,
-        { error },
-      );
-    }
-  }
-
   // Resolve RTDB path by environment to avoid mixing DEV and RELEASE data
-  private p(informed: FirebasePathsEnum): string {
+  private p(informed: FirebaseDatabasePath): string {
     const env = GetEnvironment();
 
     const firebasePath = Object.values(Environments).includes(
@@ -78,7 +54,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Set data at the root of a path (no id), with server timestamp
-  async setRoot(path: FirebasePathsEnum, data: any): Promise<void> {
+  async setRoot(path: FirebaseDatabasePath, data: any): Promise<void> {
     try {
       const ref = this.database.ref(this.p(path));
       await ref.set({
@@ -97,7 +73,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async save(path: FirebasePathsEnum, id: string, data: any): Promise<void> {
+  async save(path: FirebaseDatabasePath, id: string, data: any): Promise<void> {
     try {
       // Use Admin SDK methods for Realtime Database
       const deviceRef = this.database.ref(`${this.p(path)}/${id}`);
@@ -118,7 +94,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Add a new record with auto-generated ID
-  async addRecord(path: FirebasePathsEnum, data: any): Promise<string> {
+  async addRecord(path: FirebaseDatabasePath, data: any): Promise<string> {
     try {
       const ref = this.database.ref(this.p(path));
       const newRecordRef = ref.push(); // Create a reference with automatic ID
@@ -143,7 +119,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
 
   // Listen for new records added to a path
   async listenForNewRecords(
-    parameters: IFirebaseListenForNewRecords,
+    parameters: IFirebaseDatabaseListenForNewRecords,
   ): Promise<() => void> {
     try {
       const ref = this.database.ref(this.p(parameters.path));
@@ -196,7 +172,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
 
   // Implements a "claim" with lease to avoid parallel processing
   private async tryClaimRecord(
-    path: FirebasePathsEnum,
+    path: FirebaseDatabasePath,
     id: string,
     leaseMs = 60_000, // 1 minute lease by default
   ): Promise<boolean> {
@@ -255,7 +231,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async markRecordProcessed(
-    path: FirebasePathsEnum,
+    path: FirebaseDatabasePath,
     id: string,
   ): Promise<void> {
     try {
@@ -277,7 +253,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async releaseClaim(
-    path: FirebasePathsEnum,
+    path: FirebaseDatabasePath,
     id: string,
   ): Promise<void> {
     try {
@@ -304,7 +280,9 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
     leaseMs = 30 * 60 * 1000, // 30 minutes by default
   ): Promise<boolean> {
     const now = Date.now();
-    const ref = this.database.ref(`${this.p(FirebasePathsEnum.LOCKS)}/${name}`);
+    const ref = this.database.ref(
+      `${this.p(FirebaseDatabasePath.LOCKS)}/${name}`,
+    );
     try {
       const result = await new Promise<{ committed: boolean }>(
         (resolve, reject) => {
@@ -348,7 +326,9 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   async releaseLock(name: string): Promise<void> {
-    const ref = this.database.ref(`${this.p(FirebasePathsEnum.LOCKS)}/${name}`);
+    const ref = this.database.ref(
+      `${this.p(FirebaseDatabasePath.LOCKS)}/${name}`,
+    );
     try {
       await ref.transaction((current: any) => {
         if (current?.claimed_by === this.workerId) {
@@ -368,7 +348,7 @@ export class FirebaseDatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Method to delete a record
-  async deleteRecord(path: FirebasePathsEnum, id: string): Promise<void> {
+  async deleteRecord(path: FirebaseDatabasePath, id: string): Promise<void> {
     try {
       const ref = this.database.ref(`${this.p(path)}/${id}`);
       await ref.remove();

@@ -1,8 +1,9 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Injectable } from '@nestjs/common';
-import { FirebaseDatabaseService } from 'src/shared/google/firebase/firebase-database.service';
-import { FirebasePathsEnum } from 'src/shared/google/firebase/firebase.enum';
+import { FirebaseDatabaseService } from 'src/shared/google/firebase/database/database.service';
+import { FirebaseStorageService } from 'src/shared/google/firebase/storage/firebase-storage.service';
+import { FirebaseDatabasePath } from 'src/shared/google/firebase/database/database.enum';
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 import * as sharp from 'sharp';
 import { randomUUID } from 'node:crypto';
@@ -13,7 +14,10 @@ import { JobStatus } from 'src/modules/jobs/job.interface';
 @Injectable()
 @Processor(QueuesEnum.IMAGE_PROCESSING)
 export class ImageProcessingService {
-  constructor(private readonly firebaseDatabase: FirebaseDatabaseService) {}
+  constructor(
+    private readonly firebaseDatabase: FirebaseDatabaseService,
+    private readonly firebaseStorage: FirebaseStorageService,
+  ) {}
 
   @Process()
   async processImage(job: Job<IImageProcessingJob>): Promise<void> {
@@ -193,19 +197,33 @@ export class ImageProcessingService {
       const filename = `processed-${jobId}-${randomUUID()}.png`;
       const storagePath = `images/${filename}`;
 
+      // Upload to Firebase Storage
+      const publicUrl = await this.firebaseStorage.uploadFile(
+        imageBuffer,
+        storagePath,
+        {
+          contentType: 'image/png',
+          metadata: {
+            jobId,
+            processedAt: new Date().toISOString(),
+          },
+        },
+      );
+
       Log(
         LogType.INFO,
         ImageProcessingService.name,
         this.uploadToStorage.name,
         LogAction.SUCCESS,
         {
-          message: 'Firebase Storage upload placeholder',
+          message: 'Firebase Storage upload completed',
           storagePath,
           size: imageBuffer.length,
+          publicUrl,
         },
       );
 
-      return `https://storage.googleapis.com/placeholder/${storagePath}`;
+      return publicUrl;
     } catch (error) {
       throw new Error(`Failed to upload to storage: ${error.message}`);
     }
@@ -234,7 +252,7 @@ export class ImageProcessingService {
       }
 
       await this.firebaseDatabase.save(
-        FirebasePathsEnum.IMAGES,
+        FirebaseDatabasePath.IMAGES,
         jobId,
         updateData,
       );
