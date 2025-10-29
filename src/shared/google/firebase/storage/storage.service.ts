@@ -1,13 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
-import { FirebaseService } from '../firebase.service';
 
 @Injectable()
 export class FirebaseStorageService implements OnModuleInit {
   private bucket: ReturnType<admin.storage.Storage['bucket']>;
 
-  constructor(private readonly firebaseService: FirebaseService) {}
+  constructor() {}
 
   onModuleInit() {
     // Firebase is already initialized by FirebaseInitService

@@ -2,7 +2,7 @@ import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Injectable } from '@nestjs/common';
 import { FirebaseDatabaseService } from 'src/shared/google/firebase/database/database.service';
-import { FirebaseStorageService } from 'src/shared/google/firebase/storage/firebase-storage.service';
+import { FirebaseStorageService } from 'src/shared/google/firebase/storage/storage.service';
 import { FirebaseDatabasePath } from 'src/shared/google/firebase/database/database.enum';
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 import * as sharp from 'sharp';
