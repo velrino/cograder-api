@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { FirebaseModule } from './shared/google/firebase/firebase.module';
 import { ConfigModule } from '@nestjs/config';
 
@@ -11,7 +9,7 @@ import { ConfigModule } from '@nestjs/config';
     }),
     FirebaseModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

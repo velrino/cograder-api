@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import * as admin from 'firebase-admin'; // Import Admin SDK
+import * as admin from 'firebase-admin';
 import {
   FirebasePathsEnum,
   IFirebaseListenForNewRecords,
