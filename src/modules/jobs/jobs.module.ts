@@ -4,11 +4,12 @@ import { FirebaseModule } from 'src/shared/google/firebase/firebase.module';
 import { CreateJobService } from './create/create.service';
 import { PaginateJobsService } from './paginate/paginate.service';
 import { ImagesModule } from '../images/images.module';
+import { GetJobService } from './get/get.service';
 
 @Module({
   imports: [forwardRef(() => ImagesModule), FirebaseModule],
   controllers: [JobsController],
-  providers: [CreateJobService, PaginateJobsService],
+  providers: [CreateJobService, PaginateJobsService, GetJobService],
   exports: [CreateJobService],
 })
 export class JobsModule {}

@@ -1,10 +1,11 @@
-import { Body, Controller, Post, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, Get, Query, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CreateJobService } from './create/create.service';
 import { CreateJobDto } from './create/create.dto';
 import { JobResponseDto } from './job.dto';
 import { PaginateJobsService } from './paginate/paginate.service';
 import { PaginateJobsDto, PaginateJobsResponseDto } from './paginate/paginate.dto';
+import { GetJobService } from './get/get.service';
 
 @ApiTags('jobs')
 @Controller('api/jobs')
@@ -12,6 +13,7 @@ export class JobsController {
   constructor(
     private readonly createJobService: CreateJobService,
     private readonly paginateJobsService: PaginateJobsService,
+    private readonly getJobService: GetJobService,
   ) {}
 
   @Post()
@@ -48,5 +50,23 @@ export class JobsController {
   })
   async listJobs(@Query() query: PaginateJobsDto): Promise<PaginateJobsResponseDto> {
     return this.paginateJobsService.execute(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get job status',
+    description: 'Returns the status and details of a specific job'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Job retrieved successfully',
+    type: JobResponseDto
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Job not found'
+  })
+  async getJob(@Param('id') id: string): Promise<JobResponseDto> {
+    return this.getJobService.execute(id);
   }
 }
