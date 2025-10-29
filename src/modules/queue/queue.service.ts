@@ -13,7 +13,7 @@ export interface IImageProcessingJob {
 export class QueueService {
   constructor(
     @InjectQueue(QueuesEnum.IMAGE_PROCESSING)
-    private readonly imageProcessingQueue: Queue<IImageProcessingJob>,
+    public imageProcessingQueue: Queue<IImageProcessingJob>,
   ) {}
 
   private readonly defaultQueueOptions: Bull.JobOptions = {
@@ -60,9 +60,7 @@ export class QueueService {
     }
   }
 
-  async getJobStatus(
-    jobId: string,
-  ): Promise<Bull.JobStatus | 'stuck' | null> {
+  async getJobStatus(jobId: string): Promise<Bull.JobStatus | 'stuck' | null> {
     try {
       const job = await this.imageProcessingQueue.getJob(jobId);
       if (!job) return null;

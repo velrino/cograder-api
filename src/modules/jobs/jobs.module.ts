@@ -3,12 +3,13 @@ import { JobsController } from './jobs.controller';
 import { QueueModule } from '../queue/queue.module';
 import { FirebaseModule } from 'src/shared/google/firebase/firebase.module';
 import { CreateJobService } from './create/create.service';
+import { PaginateJobsService } from './paginate/paginate.service';
 import { ImagesModule } from '../images/images.module';
 
 @Module({
-  imports: [forwardRef(() => ImagesModule), QueueModule, FirebaseModule],
+  imports: [forwardRef(() => ImagesModule), FirebaseModule],
   controllers: [JobsController],
-  providers: [CreateJobService],
+  providers: [CreateJobService, PaginateJobsService],
   exports: [CreateJobService],
 })
 export class JobsModule {}

@@ -1,6 +1,7 @@
 export enum FirebaseDatabasePath {
   LOCKS = 'LOCKS',
   IMAGES = 'IMAGES',
+  JOBS = 'JOBS',
 }
 
 export interface IFirebaseDatabaseListenForNewRecords {
