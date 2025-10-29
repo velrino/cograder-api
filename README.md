@@ -327,7 +327,7 @@ gcloud run deploy cograder-api \
 
 **API URL:** https://cograder-api-2057331207.southamerica-east1.run.app/
 
-**API Documentation:** https://cograder-api-2057331207.southamerica-east1.run.app/api
+**API Documentation:** https://cograder-api-2057331207.southamerica-east1.run.app/docs
 
 ## 👨‍💻 Author
 
