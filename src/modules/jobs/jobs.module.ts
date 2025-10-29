@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JobsController } from './jobs.controller';
 import { QueueModule } from '../queue/queue.module';
 import { FirebaseModule } from 'src/shared/google/firebase/firebase.module';
 import { CreateJobService } from './create/create.service';
+import { ImagesModule } from '../images/images.module';
 
 @Module({
-  imports: [QueueModule, FirebaseModule],
+  imports: [forwardRef(() => ImagesModule), QueueModule, FirebaseModule],
   controllers: [JobsController],
   providers: [CreateJobService],
   exports: [CreateJobService],

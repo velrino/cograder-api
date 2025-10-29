@@ -7,7 +7,7 @@ export enum ImageProcessingMessage {
 
 // Image Processing Errors
 export enum ImageProcessingError {
-  NOT_FOUND = 'IMAGE_NOT_FOUND_404',
+  NOT_FOUND = 'IMAGE_NOT_FOUND',
   HTTP_ERROR = 'IMAGE_HTTP_ERROR',
   TOO_LARGE = 'IMAGE_TOO_LARGE',
   DOWNLOAD_TIMEOUT = 'IMAGE_DOWNLOAD_TIMEOUT',

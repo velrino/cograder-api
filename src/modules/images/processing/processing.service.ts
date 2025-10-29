@@ -14,6 +14,7 @@ import {
   ImageProcessingMessage,
   ImageProcessingError,
 } from 'src/shared/constants/messages.enum';
+import { ImageValidatorService } from '../validator/validator.service';
 
 @Injectable()
 @Processor(QueuesEnum.IMAGE_PROCESSING)
@@ -21,6 +22,7 @@ export class ImageProcessingService {
   constructor(
     private readonly firebaseDatabase: FirebaseDatabaseService,
     private readonly firebaseStorage: FirebaseStorageService,
+    private readonly imageValidator: ImageValidatorService,
   ) {}
 
   @Process()
@@ -87,41 +89,22 @@ export class ImageProcessingService {
   }
 
   private async downloadImage(imageUrl: string): Promise<Buffer> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 30 seconds timeout
-
     try {
-      const response = await fetch(imageUrl, {
-        signal: controller.signal,
+      const result = await this.imageValidator.validate(imageUrl, {
+        checkContent: true,
+        timeout: 10000,
+        maxSizeInMB: 10,
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(ImageProcessingError.NOT_FOUND);
-        }
-        throw new Error(ImageProcessingError.HTTP_ERROR);
+      if (!result.buffer) {
+        throw new Error(ImageProcessingError.DOWNLOAD_FAILED);
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      // Check size limit (10MB)
-      const sizeInMB = buffer.length / (1024 * 1024);
-      if (sizeInMB > 10) {
-        throw new Error(ImageProcessingError.TOO_LARGE);
-      }
-
-      return buffer;
+      return result.buffer;
     } catch (error) {
-      clearTimeout(timeoutId);
-
-      if (error.name === 'AbortError') {
-        throw new Error(ImageProcessingError.DOWNLOAD_TIMEOUT);
-      }
-      if (error.message.includes('fetch failed')) {
-        throw new Error(ImageProcessingError.NETWORK_ERROR);
+      // Re-throw as Error for consistency with existing error handling
+      if (error.response?.message) {
+        throw new Error(error.response.message);
       }
       throw new Error(ImageProcessingError.DOWNLOAD_FAILED);
     }
