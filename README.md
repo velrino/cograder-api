@@ -1,137 +1,168 @@
-# CoGrader API - Real-Time Image Processing Pipeline
+# CoGrader API - Image Processing Pipeline
 
-Backend API for the CoGrader Full-Stack Challenge. A production-grade NestJS application that processes images asynchronously using BullMQ, with Firebase integration for storage and real-time updates.
+Backend API for real-time image processing using NestJS, BullMQ, and Firebase.
 
-## 🎯 Overview
+![API Documentation](doc/api.png)
 
-This API provides a robust image processing pipeline that:
-- Accepts image URLs for processing
-- Downloads and validates images
-- Applies transformations (resize, grayscale, watermark)
-- Uploads results to Firebase Storage
-- Provides real-time job status updates via Firebase Realtime Database
+> **Production API:** https://gograder-api-2057331207.southamerica-east1.run.app/api
+
+## 🎯 Features
+
+- Asynchronous image processing with BullMQ
+- Real-time job status updates via Firebase
+- Image transformations (resize, grayscale, watermark)
+- Comprehensive error handling
+- 20 TDD test cases (100% passing)
 
 ## 🏗️ Architecture
 
+![System Architecture](doc/arch.jpg)
+
+The system consists of:
+
+- **Frontend**: React on Vercel with CloudFlare CDN
+- **Backend**: NestJS API on Google Cloud Run
+- **Database**: Firebase Realtime Database (real-time updates)
+- **Storage**: Firebase Storage (processed images)
+- **Queue**: Redis/BullMQ (job processing)
+
 ### Tech Stack
+
 - **Framework**: NestJS (TypeScript)
-- **Queue System**: BullMQ + Redis
+- **Queue**: BullMQ + Redis
 - **Database**: Firebase Realtime Database
 - **Storage**: Firebase Storage
 - **Image Processing**: Sharp
-- **Validation**: class-validator
 
-### Key Components
+## 📊 Processing Flow
 
 ```
-src/
-├── modules/
-│   ├── jobs/              # Job creation and management
-│   │   ├── dto/           # Data transfer objects
-│   │   ├── jobs.controller.ts
-│   │   └── jobs.service.ts
-│   ├── queue/             # BullMQ queue management
-│   │   ├── queue.service.ts
-│   │   └── redis-health.service.ts
-│   └── images/            # Image processing worker
-│       └── processing/
-│           └── processing.service.ts
-└── shared/
-    └── google/firebase/   # Firebase integration
-        ├── firebase-init.service.ts
-        ├── firebase-database.service.ts
-        └── storage/
-            └── firebase-storage.service.ts
+┌─────────────┐
+│   Client    │
+│  POST /jobs │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Jobs Controller                          │
+│  1. Validate imageUrl                                        │
+│  2. Create job in Firebase DB (status: pending)              │
+│  3. Add job to BullMQ queue                                  │
+│  4. Return job ID to client                                  │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     BullMQ Queue                             │
+│  • Redis-based queue system                                  │
+│  • Automatic retries on failure                              │
+│  • Concurrent job processing                                 │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Image Processing Worker                         │
+│                                                              │
+│  Step 1: Download Image (Progress: 10% → 30%)               │
+│  ├─ Fetch image from URL                                     │
+│  ├─ Timeout: 10s, Max size: 10MB                            │
+│  └─ Update status: active                                    │
+│                                                              │
+│  Step 2: Validate Image (Progress: 30% → 40%)               │
+│  ├─ Check format (JPEG, PNG, WEBP)                          │
+│  ├─ Verify file integrity                                    │
+│  └─ Validate dimensions                                      │
+│                                                              │
+│  Step 3: Transform Image (Progress: 40% → 70%)              │
+│  ├─ Resize to 800x600 (maintain aspect ratio)               │
+│  ├─ Convert to grayscale                                     │
+│  └─ Add watermark "Processed by CoGrader"                    │
+│                                                              │
+│  Step 4: Upload to Storage (Progress: 70% → 90%)            │
+│  ├─ Upload to Firebase Storage                               │
+│  └─ Get public URL                                           │
+│                                                              │
+│  Step 5: Complete Job (Progress: 90% → 100%)                │
+│  ├─ Update status: completed                                 │
+│  └─ Save resultUrl                                           │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Firebase Realtime DB                        │
+│  • Real-time updates to client                               │
+│  • No polling required                                       │
+│  • WebSocket-based listeners                                 │
+└─────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────┐
+│   Client    │
+│  (Receives  │
+│   updates)  │
+└─────────────┘
 ```
 
-## 🚀 Getting Started
+### Error Handling Flow
+
+```
+Any Step Fails
+     ↓
+Update status: "failed"
+     ↓
+Save error message
+     ↓
+Notify client via Firebase
+     ↓
+Job marked as failed
+(can be retried by BullMQ)
+```
+
+## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
-- pnpm (or npm/yarn)
-- Redis (running locally or remote)
-- Firebase project with:
-  - Realtime Database enabled
-  - Storage bucket created
-  - Service account credentials
+- Redis running
+- Firebase project setup
 
 ### Installation
 
 ```bash
-# Install dependencies
 pnpm install
 ```
 
-### Environment Configuration
+### Environment Setup
 
-Create a `.env` file in the root directory:
+Create `.env`:
 
 ```env
-# Redis Configuration
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 
-# Firebase Admin SDK
-# Get from Firebase Console > Project Settings > Service Accounts
-GOOGLE_FIREBASE_ADMIN_SDK={"type":"service_account","project_id":"...","private_key":"..."}
+GOOGLE_FIREBASE_ADMIN_SDK={"type":"service_account","project_id":"..."}
 
-# Server Configuration
 PORT=8080
 NODE_ENV=development
 ```
 
-### Firebase Storage Rules
-
-Update your Firebase Storage rules to allow public read access:
-
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read: if true;  // Public read access
-      allow write: if false; // Write only via backend
-    }
-  }
-}
-```
-
-### Running the Application
+### Run
 
 ```bash
-# Development mode (with hot reload)
+# Development
 pnpm run start:dev
 
-# Production mode
-pnpm run build
-pnpm run start:prod
+# Production
+pnpm run build && pnpm run start:prod
 ```
 
-The API will be available at `http://localhost:8080`
+API available at: `http://localhost:8080`
 
 ## 📡 API Endpoints
 
-### Health Check
+### Create Job
 
-#### Check Redis Connection
-```bash
-GET /api/queue/health
-```
-
-**Response:**
-```json
-{
-  "redis": {
-    "connected": true,
-    "status": "healthy"
-  }
-}
-```
-
-### Jobs
-
-#### Create a New Job
 ```bash
 POST /api/jobs
 Content-Type: application/json
@@ -142,6 +173,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -153,265 +185,163 @@ Content-Type: application/json
 }
 ```
 
-#### Get Job Status
+### Get Job Status
+
 ```bash
 GET /api/jobs/:id
 ```
 
-**Response:**
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "imageUrl": "https://example.com/image.jpg",
-  "status": "completed",
-  "progress": 100,
-  "resultUrl": "https://storage.googleapis.com/...",
-  "createdAt": "2025-10-29T17:30:00.000Z",
-  "updatedAt": "2025-10-29T17:30:15.000Z"
-}
-```
+### List All Jobs
 
-#### List All Jobs
 ```bash
 GET /api/jobs
 ```
 
-## 🔄 Image Processing Pipeline
+### Health Check
 
-1. **Job Creation** (`POST /api/jobs`)
-   - Validates image URL format
-   - Creates job record in Firebase
-   - Adds job to BullMQ queue
-
-2. **Worker Processing** (Automatic)
-   - Downloads image from URL (30s timeout, 10MB max)
-   - Validates format (PNG, JPG, WEBP)
-   - Applies transformations:
-     - Resize to 800x600 (maintains aspect ratio)
-     - Convert to grayscale
-     - Add "Processed by CoGrader" watermark
-   - Uploads to Firebase Storage
-   - Updates job status at each step
-
-3. **Real-time Updates**
-   - Firebase Realtime Database tracks progress
-   - Frontend receives updates via Firebase listeners
-   - No polling required
+```bash
+GET /api/queue/health
+```
 
 ## 🧪 Testing
 
-### Manual Testing with cURL
+### TDD Implementation
 
-#### Valid Image
+**20 test cases** covering all scenarios:
+
 ```bash
-curl -X POST http://localhost:8080/api/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"imageUrl": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4"}'
+# Run tests
+npm test -- processing.service.spec.ts
+
+# Expected: ✅ Test Suites: 1 passed, Tests: 20 passed
 ```
 
-#### Invalid URL (404)
+**Test Categories:**
+
+✅ **Positive Scenarios (7)**
+
+- Process JPEG, PNG, WEBP images
+- Track progress updates (10% → 30% → 40% → 70% → 90% → 100%)
+- Apply transformations correctly
+
+✅ **Negative Scenarios (9)**
+
+- Download failures
+- Invalid formats (TIFF)
+- Oversized images (>10MB)
+- Invalid buffers
+- Upload failures
+
+✅ **Edge Cases (4)**
+
+- Minimum size (1x1 pixel)
+- Exactly 10MB limit
+- No image enlargement
+- Continue on status update failure
+
+### Manual Testing
+
 ```bash
+# Valid image
 curl -X POST http://localhost:8080/api/jobs \
   -H "Content-Type: application/json" \
-  -d '{"imageUrl": "https://httpstat.us/404"}'
-```
+  -d '{"imageUrl": "https://picsum.photos/1200/800"}'
 
-#### Non-Image URL
-```bash
+# Invalid format
 curl -X POST http://localhost:8080/api/jobs \
   -H "Content-Type: application/json" \
   -d '{"imageUrl": "https://www.google.com"}'
-```
 
-#### Multiple Jobs Simultaneously
-```bash
+# Multiple jobs
 for i in {1..5}; do
   curl -X POST http://localhost:8080/api/jobs \
     -H "Content-Type: application/json" \
-    -d '{"imageUrl": "https://picsum.photos/1200/800"}' &
+    -d '{"imageUrl": "https://picsum.photos/800/600"}' &
 done
 wait
 ```
 
-### Unit Tests
-```bash
-# Run unit tests
-pnpm run test
+## 🔍 Error Messages
 
-# Run with coverage
-pnpm run test:cov
+All errors use i18n-ready SNAKE_CASE constants:
 
-# Run e2e tests
-pnpm run test:e2e
+```typescript
+IMAGE_NOT_FOUND_404; // 404 error
+IMAGE_TOO_LARGE; // >10MB
+IMAGE_INVALID_FORMAT; // Not PNG/JPG/WEBP
+IMAGE_DOWNLOAD_FAILED; // Network error
+IMAGE_DOWNLOAD_TIMEOUT; // >10s timeout
+IMAGE_TRANSFORMATION_FAILED; // Sharp error
+IMAGE_UPLOAD_FAILED; // Storage error
 ```
 
-## 🔍 Error Handling
+Frontend can translate these keys to any language.
 
-The API handles the following error cases:
+## 📁 Project Structure
 
-- **404 Not Found**: Image URL returns 404
-- **Invalid Format**: URL doesn't point to PNG/JPG/WEBP
-- **Image Too Large**: File exceeds 10MB limit
-- **Network Timeout**: Download takes longer than 30s
-- **Transformation Failed**: Sharp processing error
-- **Storage Upload Failed**: Firebase Storage error
-
-All errors return appropriate HTTP status codes and error messages.
-
-## 📊 Monitoring
-
-### Application Logs
-
-Structured logging format:
 ```
-{TYPE}.{ServiceName}.{MethodName}.{Action} { context }
-```
-
-Example:
-```
-INFO.ImageProcessingService.processImage.success {
-  jobId: '550e8400-...',
-  imageUrl: 'https://...',
-  message: 'Image processing completed'
-}
-```
-
-### Redis Connection Status
-
-Check at startup:
-```
-✅ Redis connection established { host: 'localhost', port: 6379 }
-✅ Firebase Admin SDK initialized
-✅ Firebase Realtime Database ready
-✅ Firebase Storage ready { bucketName: 'test-gograder.firebasestorage.app' }
+src/
+├── modules/
+│   ├── jobs/                    # Job management
+│   │   ├── dto/
+│   │   ├── jobs.controller.ts
+│   │   └── jobs.service.ts
+│   ├── images/                  # Image processing
+│   │   ├── processing/
+│   │   │   ├── processing.service.ts
+│   │   │   └── processing.service.spec.ts  # 20 tests
+│   │   └── validator/
+│   │       └── validator.service.ts
+│   └── queue/                   # BullMQ management
+│       └── queue.service.ts
+└── shared/
+    ├── google/firebase/         # Firebase integration
+    │   ├── database/
+    │   └── storage/
+    └── constants/
+        └── messages.enum.ts     # i18n messages
 ```
 
 ## 🚢 Deployment
 
-### Google Cloud Run (Recommended)
-
 ```bash
-# Build Docker image
+# Build
 docker build -t cograder-api .
 
 # Deploy to Cloud Run
 gcloud run deploy cograder-api \
   --image cograder-api \
   --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated
+  --region us-central1
 ```
-
-### Environment Variables for Production
-
-Set these in your deployment platform:
-- `REDIS_HOST`
-- `REDIS_PORT`
-- `REDIS_PASSWORD`
-- `GOOGLE_FIREBASE_ADMIN_SDK`
-- `NODE_ENV=production`
-- `PORT=8080`
 
 ## 📝 Key Design Decisions
 
-1. **BullMQ over other queue systems**
-   - Robust Redis-based queue
-   - Automatic retries with exponential backoff
-   - Job progress tracking
-   - Concurrent processing
+1. **BullMQ**: Reliable Redis-based queue with retries
+2. **Firebase**: Real-time WebSocket updates (no polling)
+3. **Sharp**: Fast native image processing
+4. **Modular Architecture**: Easy to test and maintain
+5. **i18n Messages**: All errors translatable via SNAKE_CASE keys
 
-2. **Firebase for real-time updates**
-   - WebSocket-based real-time listeners
-   - No polling required
-   - Automatic reconnection
-   - Built-in offline support
+## 🌐 Production
 
-3. **Sharp for image processing**
-   - Fast, memory-efficient
-   - Native bindings (no ImageMagick dependency)
-   - Stream-based processing
-   - Wide format support
+**API URL:** https://gograder-api-2057331207.southamerica-east1.run.app/
 
-4. **Modular architecture**
-   - Separation of concerns (jobs, queue, images, firebase)
-   - Easy to test and maintain
-   - Scalable design
+**API Documentation:** https://gograder-api-2057331207.southamerica-east1.run.app/api
 
-5. **i18n-ready message system**
-   - All messages and errors use SNAKE_CASE keys
-   - Centralized in `src/shared/constants/messages.enum.ts`
-   - Frontend can translate keys to any language
-   - Example: `IMAGE_PROCESSING_STARTING` → translatable
+## 👨‍💻 Author
 
-## 🌍 Internationalization (i18n)
+**Velrino Neto**
 
-All user-facing messages and errors are defined as SNAKE_CASE constants, making them easy to translate in the frontend.
+- GitHub: [@velrino](https://github.com/velrino)
+- LinkedIn: [/in/velrino](https://www.linkedin.com/in/velrino/)
 
-### Message Enums
-
-```typescript
-// src/shared/constants/messages.enum.ts
-export enum ImageProcessingMessage {
-  STARTING = 'IMAGE_PROCESSING_STARTING',
-  COMPLETED = 'IMAGE_PROCESSING_COMPLETED',
-}
-
-export enum ImageProcessingError {
-  NOT_FOUND = 'IMAGE_NOT_FOUND_404',
-  TOO_LARGE = 'IMAGE_TOO_LARGE',
-  // ...
-}
-```
-
-### API Response Example
-
-```json
-{
-  "id": "550e8400-...",
-  "status": "failed",
-  "error": "IMAGE_NOT_FOUND_404"
-}
-```
-
-### Frontend Translation
-
-```typescript
-// Frontend i18n setup
-const translations = {
-  en: {
-    IMAGE_NOT_FOUND_404: "Image not found (404)",
-    IMAGE_TOO_LARGE: "Image is too large (max 10MB)"
-  },
-  pt: {
-    IMAGE_NOT_FOUND_404: "Imagem não encontrada (404)",
-    IMAGE_TOO_LARGE: "Imagem muito grande (máx 10MB)"
-  }
-}
-
-// Usage
-t(error.message) // Translates the key to current language
-```
-
-### Available Message Categories
-
-- **ImageProcessingMessage**: Success messages for processing steps
-- **ImageProcessingError**: Error messages for image operations
-- **ValidationMessage**: Form validation errors
-- **FirebaseMessage**: Firebase initialization and status
-- **FirebaseError**: Firebase operation errors
-
-## 🤝 Contributing
-
-This is a challenge project. For the actual implementation:
-1. Focus on code correctness over speed
-2. Anticipate edge cases and errors
-3. Write clear, maintainable code
-4. Document key decisions
+_Developed with assistance from Claude AI for TDD implementation and code architecture_
 
 ## 📄 License
 
-UNLICENSED - Challenge project for CoGrader
+UNLICENSED - Challenge project
 
 ---
 
-**Built with ❤️ using NestJS, BullMQ, and Firebase**
+![alt text](image.png)
