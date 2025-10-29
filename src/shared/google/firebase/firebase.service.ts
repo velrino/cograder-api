@@ -20,10 +20,14 @@ export class FirebaseService implements OnModuleInit {
 
       // Check if the app is already initialized to avoid errors in tests/reloads
       if (!admin.apps.length) {
+        const helper = {
+          databaseURL:
+            'https://cograder-test-4348a-default-rtdb.firebaseio.com/',
+          storageBucket: 'cograder-test-4348a.firebasestorage.app',
+        };
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
-          databaseURL: 'https://test-gograder-default-rtdb.firebaseio.com/',
-          storageBucket: 'test-gograder.firebasestorage.app',
+          ...helper,
         });
 
         Log(
@@ -32,9 +36,8 @@ export class FirebaseService implements OnModuleInit {
           this.onModuleInit.name,
           LogAction.SUCCESS,
           {
+            ...helper,
             message: FirebaseMessage.SDK_INITIALIZED,
-            databaseURL: 'https://test-gograder-default-rtdb.firebaseio.com/',
-            storageBucket: 'test-gograder.firebasestorage.app',
           },
         );
       }
@@ -69,13 +72,9 @@ export class FirebaseService implements OnModuleInit {
       const connected = snapshot.val();
       return connected === true;
     } catch (error) {
-      Log(
-        LogType.ERROR,
-        FirebaseService.name,
-        'ping',
-        LogAction.FAILED,
-        { error },
-      );
+      Log(LogType.ERROR, FirebaseService.name, 'ping', LogAction.FAILED, {
+        error,
+      });
       return false;
     }
   }
