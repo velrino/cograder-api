@@ -1,15 +1,17 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
+import {
+  FirebaseMessage,
+  FirebaseError,
+} from 'src/shared/constants/messages.enum';
 
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     try {
       if (!process.env.GOOGLE_FIREBASE_ADMIN_SDK) {
-        throw new Error(
-          'GOOGLE_FIREBASE_ADMIN_SDK environment variable is not set',
-        );
+        throw new Error(FirebaseError.SDK_ENV_NOT_SET);
       }
 
       const serviceAccount = JSON.parse(
@@ -30,22 +32,21 @@ export class FirebaseService implements OnModuleInit {
           this.onModuleInit.name,
           LogAction.SUCCESS,
           {
-            message: '✅ Firebase Admin SDK initialized',
+            message: FirebaseMessage.SDK_INITIALIZED,
             databaseURL: 'https://test-gograder-default-rtdb.firebaseio.com/',
             storageBucket: 'test-gograder.firebasestorage.app',
           },
         );
       }
     } catch (error) {
-      const about = 'Firebase Admin SDK initialization error';
       Log(
         LogType.ERROR,
         FirebaseService.name,
         this.onModuleInit.name,
         LogAction.FAILED,
-        { about, error },
+        { error },
       );
-      throw new Error(about);
+      throw new Error(FirebaseError.SDK_INIT_FAILED);
     }
   }
 
@@ -70,7 +71,7 @@ export class FirebaseService implements OnModuleInit {
           FirebaseService.name,
           'onModuleDestroy',
           LogAction.SUCCESS,
-          { message: 'Firebase connections cleaned up' },
+          { message: FirebaseMessage.CONNECTIONS_CLEANED },
         );
       }
     } catch (error) {

@@ -9,6 +9,6 @@ export class JobsController {
 
   @Post()
   async createJob(@Body() body: CreateJobDto): Promise<JobResponseDto> {
-    return this.createJobService.createJob(body);
+    return this.createJobService.execute(body);
   }
 }

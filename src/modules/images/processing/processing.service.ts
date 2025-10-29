@@ -10,6 +10,10 @@ import { randomUUID } from 'node:crypto';
 import { IImageProcessingJob } from 'src/modules/queue/queue.service';
 import { QueuesEnum } from 'src/modules/queue/queue.interface';
 import { JobStatus } from 'src/modules/jobs/job.interface';
+import {
+  ImageProcessingMessage,
+  ImageProcessingError,
+} from 'src/shared/constants/messages.enum';
 
 @Injectable()
 @Processor(QueuesEnum.IMAGE_PROCESSING)
@@ -29,7 +33,7 @@ export class ImageProcessingService {
         ImageProcessingService.name,
         this.processImage.name,
         LogAction.SUCCESS,
-        { jobId, imageUrl, message: 'Starting image processing' },
+        { jobId, imageUrl, message: ImageProcessingMessage.STARTING },
       );
 
       // Update status: Processing
@@ -59,7 +63,7 @@ export class ImageProcessingService {
         ImageProcessingService.name,
         this.processImage.name,
         LogAction.SUCCESS,
-        { jobId, resultUrl, message: 'Image processing completed' },
+        { jobId, resultUrl, message: ImageProcessingMessage.COMPLETED },
       );
     } catch (error) {
       Log(
@@ -95,9 +99,9 @@ export class ImageProcessingService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Image not found (404)');
+          throw new Error(ImageProcessingError.NOT_FOUND);
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(ImageProcessingError.HTTP_ERROR);
       }
 
       const arrayBuffer = await response.arrayBuffer();
@@ -106,7 +110,7 @@ export class ImageProcessingService {
       // Check size limit (10MB)
       const sizeInMB = buffer.length / (1024 * 1024);
       if (sizeInMB > 10) {
-        throw new Error(`Image too large: ${sizeInMB.toFixed(2)}MB (max 10MB)`);
+        throw new Error(ImageProcessingError.TOO_LARGE);
       }
 
       return buffer;
@@ -114,12 +118,12 @@ export class ImageProcessingService {
       clearTimeout(timeoutId);
 
       if (error.name === 'AbortError') {
-        throw new Error('Image download timeout');
+        throw new Error(ImageProcessingError.DOWNLOAD_TIMEOUT);
       }
       if (error.message.includes('fetch failed')) {
-        throw new Error('Failed to fetch image - network error');
+        throw new Error(ImageProcessingError.NETWORK_ERROR);
       }
-      throw new Error(`Failed to download image: ${error.message}`);
+      throw new Error(ImageProcessingError.DOWNLOAD_FAILED);
     }
   }
 
@@ -130,19 +134,17 @@ export class ImageProcessingService {
       // Check if it's a valid image format
       const validFormats = ['jpeg', 'jpg', 'png', 'webp'];
       if (!validFormats.includes(metadata.format)) {
-        throw new Error(
-          `Invalid image format: ${metadata.format}. Supported: ${validFormats.join(', ')}`,
-        );
+        throw new Error(ImageProcessingError.INVALID_FORMAT);
       }
 
       // Check image size (double-check after download)
       const sizeInMB = imageBuffer.length / (1024 * 1024);
       if (sizeInMB > 10) {
-        throw new Error(`Image too large: ${sizeInMB.toFixed(2)}MB (max 10MB)`);
+        throw new Error(ImageProcessingError.TOO_LARGE);
       }
     } catch (error) {
       if (error.message.includes('Input buffer')) {
-        throw new Error('Invalid image file');
+        throw new Error(ImageProcessingError.INVALID_FILE);
       }
       throw error;
     }
@@ -185,7 +187,7 @@ export class ImageProcessingService {
 
       return transformedImage;
     } catch (error) {
-      throw new Error(`Image transformation failed: ${error.message}`);
+      throw new Error(ImageProcessingError.TRANSFORMATION_FAILED);
     }
   }
 
@@ -216,7 +218,7 @@ export class ImageProcessingService {
         this.uploadToStorage.name,
         LogAction.SUCCESS,
         {
-          message: 'Firebase Storage upload completed',
+          message: ImageProcessingMessage.UPLOAD_COMPLETED,
           storagePath,
           size: imageBuffer.length,
           publicUrl,
@@ -225,7 +227,7 @@ export class ImageProcessingService {
 
       return publicUrl;
     } catch (error) {
-      throw new Error(`Failed to upload to storage: ${error.message}`);
+      throw new Error(ImageProcessingError.UPLOAD_FAILED);
     }
   }
 

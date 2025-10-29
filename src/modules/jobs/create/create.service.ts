@@ -15,7 +15,7 @@ export class CreateJobService {
     private readonly firebaseDatabase: FirebaseDatabaseService,
   ) {}
 
-  async createJob(createJobDto: CreateJobDto): Promise<JobResponseDto> {
+  async execute(createJobDto: CreateJobDto): Promise<JobResponseDto> {
     try {
       const jobId = randomUUID();
       const now = new Date();
@@ -46,7 +46,7 @@ export class CreateJobService {
       Log(
         LogType.INFO,
         CreateJobService.name,
-        this.createJob.name,
+        this.execute.name,
         LogAction.SUCCESS,
         { jobId, imageUrl: createJobDto.imageUrl },
       );
@@ -56,7 +56,7 @@ export class CreateJobService {
       Log(
         LogType.ERROR,
         CreateJobService.name,
-        this.createJob.name,
+        this.execute.name,
         LogAction.FAILED,
         { error, createJobDto },
       );
