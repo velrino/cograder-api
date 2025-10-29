@@ -37,7 +37,7 @@ export class PaginateJobsService {
 
       if (allJobs.length === 0) {
         return {
-          records: [],
+          data: [],
           total: 0,
           page,
           limit,
@@ -89,7 +89,7 @@ export class PaginateJobsService {
       );
 
       return {
-        records: paginatedData,
+        data: paginatedData,
         total,
         page,
         limit,
