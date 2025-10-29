@@ -337,6 +337,69 @@ Set these in your deployment platform:
    - Easy to test and maintain
    - Scalable design
 
+5. **i18n-ready message system**
+   - All messages and errors use SNAKE_CASE keys
+   - Centralized in `src/shared/constants/messages.enum.ts`
+   - Frontend can translate keys to any language
+   - Example: `IMAGE_PROCESSING_STARTING` → translatable
+
+## 🌍 Internationalization (i18n)
+
+All user-facing messages and errors are defined as SNAKE_CASE constants, making them easy to translate in the frontend.
+
+### Message Enums
+
+```typescript
+// src/shared/constants/messages.enum.ts
+export enum ImageProcessingMessage {
+  STARTING = 'IMAGE_PROCESSING_STARTING',
+  COMPLETED = 'IMAGE_PROCESSING_COMPLETED',
+}
+
+export enum ImageProcessingError {
+  NOT_FOUND = 'IMAGE_NOT_FOUND_404',
+  TOO_LARGE = 'IMAGE_TOO_LARGE',
+  // ...
+}
+```
+
+### API Response Example
+
+```json
+{
+  "id": "550e8400-...",
+  "status": "failed",
+  "error": "IMAGE_NOT_FOUND_404"
+}
+```
+
+### Frontend Translation
+
+```typescript
+// Frontend i18n setup
+const translations = {
+  en: {
+    IMAGE_NOT_FOUND_404: "Image not found (404)",
+    IMAGE_TOO_LARGE: "Image is too large (max 10MB)"
+  },
+  pt: {
+    IMAGE_NOT_FOUND_404: "Imagem não encontrada (404)",
+    IMAGE_TOO_LARGE: "Imagem muito grande (máx 10MB)"
+  }
+}
+
+// Usage
+t(error.message) // Translates the key to current language
+```
+
+### Available Message Categories
+
+- **ImageProcessingMessage**: Success messages for processing steps
+- **ImageProcessingError**: Error messages for image operations
+- **ValidationMessage**: Form validation errors
+- **FirebaseMessage**: Firebase initialization and status
+- **FirebaseError**: Firebase operation errors
+
 ## 🤝 Contributing
 
 This is a challenge project. For the actual implementation:
