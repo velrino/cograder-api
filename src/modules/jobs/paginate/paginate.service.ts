@@ -54,7 +54,8 @@ export class PaginateJobsService {
           imageUrl: job.data.imageUrl,
           status: await job.getState(),
           progress: job.progress(),
-          createdAt: job.timestamp,
+          timestamp: job.timestamp,
+          createdAt: new Date(job.timestamp),
           failedReason: job.failedReason,
           returnvalue: job.returnvalue,
         })),
@@ -62,8 +63,8 @@ export class PaginateJobsService {
 
       // Sort by orderBy field
       jobsArray.sort((a, b) => {
-        const aValue = a.createdAt || 0;
-        const bValue = b.createdAt || 0;
+        const aValue = a.timestamp || 0;
+        const bValue = b.timestamp || 0;
 
         if (order === 'asc') {
           return aValue - bValue;
@@ -79,14 +80,6 @@ export class PaginateJobsService {
 
       // Slice data for current page
       const paginatedData = jobsArray.slice(startIndex, endIndex);
-
-      Log(
-        LogType.INFO,
-        PaginateJobsService.name,
-        this.execute.name,
-        LogAction.SUCCESS,
-        { total, page, limit, order },
-      );
 
       return {
         data: paginatedData,

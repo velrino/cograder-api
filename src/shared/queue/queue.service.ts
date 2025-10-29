@@ -18,9 +18,9 @@ export class QueueService {
 
   private readonly defaultQueueOptions: Bull.JobOptions = {
     // Automatically remove the job from the queue upon successful completion
-    removeOnComplete: true,
+    removeOnComplete: false,
     // Automatically remove the job from the queue upon failure
-    removeOnFail: true,
+    removeOnFail: false,
     // Set the number of retry attempts in case of failure
     attempts: 2,
     // Define a fixed delay of 1 minute (60,000 milliseconds) between retry attempts
@@ -100,13 +100,9 @@ export class QueueService {
       const result = await client.ping();
       return result === 'PONG';
     } catch (error) {
-      Log(
-        LogType.ERROR,
-        QueueService.name,
-        'ping',
-        LogAction.FAILED,
-        { error },
-      );
+      Log(LogType.ERROR, QueueService.name, 'ping', LogAction.FAILED, {
+        error,
+      });
       return false;
     }
   }
