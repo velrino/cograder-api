@@ -38,32 +38,32 @@ export class ImageProcessingService {
         { jobId, imageUrl, message: ImageProcessingMessage.STARTING },
       );
 
-      // Update status: Processing
-      await this.updateJobStatus(jobId, JobStatus.active, 10);
+      // Update status: Processing with original URL
+      await this.updateJobStatus(jobId, JobStatus.active, 10, undefined, undefined, imageUrl);
       await job.progress(10);
 
       // Step 1: Download image
       const imageBuffer = await this.downloadImage(imageUrl);
-      await this.updateJobStatus(jobId, JobStatus.active, 30);
+      await this.updateJobStatus(jobId, JobStatus.active, 30, undefined, undefined, imageUrl);
       await job.progress(30);
 
       // Step 2: Validate image
       await this.validateImage(imageBuffer);
-      await this.updateJobStatus(jobId, JobStatus.active, 40);
+      await this.updateJobStatus(jobId, JobStatus.active, 40, undefined, undefined, imageUrl);
       await job.progress(30);
 
       // Step 3: Transform image (resize, grayscale, watermark)
       const transformedBuffer = await this.transformImage(imageBuffer);
-      await this.updateJobStatus(jobId, JobStatus.active, 70);
+      await this.updateJobStatus(jobId, JobStatus.active, 70, undefined, undefined, imageUrl);
       await job.progress(70);
 
       // Step 4: Upload to Firebase Storage
       const resultUrl = await this.uploadToStorage(jobId, transformedBuffer);
-      await this.updateJobStatus(jobId, JobStatus.active, 90);
+      await this.updateJobStatus(jobId, JobStatus.active, 90, resultUrl, undefined, imageUrl);
       await job.progress(90);
 
       // Step 5: Mark as completed
-      await this.updateJobStatus(jobId, JobStatus.completed, 100, resultUrl);
+      await this.updateJobStatus(jobId, JobStatus.completed, 100, resultUrl, undefined, imageUrl);
       await job.progress(100);
 
       Log(
@@ -227,6 +227,7 @@ export class ImageProcessingService {
     progress: number,
     resultUrl?: string,
     error?: string,
+    originalUrl?: string,
   ): Promise<void> {
     try {
       const updateData: any = {
@@ -234,6 +235,10 @@ export class ImageProcessingService {
         progress,
         updatedAt: new Date(),
       };
+
+      if (originalUrl) {
+        updateData.originalUrl = originalUrl;
+      }
 
       if (resultUrl) {
         updateData.resultUrl = resultUrl;
