@@ -4,7 +4,7 @@ Backend API for real-time image processing using NestJS, BullMQ, and Firebase.
 
 ![API Documentation](doc/api.png)
 
-> **Production API:** https://cograder-api-2057331207.southamerica-east1.run.app
+> **Production API:** https://cograder-2057331207.us-central1.run.app
 
 ## 🎯 Features
 
@@ -325,9 +325,9 @@ gcloud run deploy cograder-api \
 
 ## 🌐 Production
 
-**API URL:** https://cograder-api-2057331207.southamerica-east1.run.app/
+**API URL:** https://cograder-2057331207.us-central1.run.app/
 
-**API Documentation:** https://cograder-api-2057331207.southamerica-east1.run.app/docs
+**API Documentation:** https://cograder-2057331207.us-central1.run.app/docs
 
 ## 👨‍💻 Author
 
