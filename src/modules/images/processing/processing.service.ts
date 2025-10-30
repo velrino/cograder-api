@@ -39,31 +39,73 @@ export class ImageProcessingService {
       );
 
       // Update status: Processing with original URL
-      await this.updateJobStatus(jobId, JobStatus.active, 10, undefined, undefined, imageUrl);
+      await this.updateJobStatus(
+        jobId,
+        JobStatus.active,
+        10,
+        undefined,
+        undefined,
+        imageUrl,
+      );
       await job.progress(10);
 
       // Step 1: Download image
       const imageBuffer = await this.downloadImage(imageUrl);
-      await this.updateJobStatus(jobId, JobStatus.active, 30, undefined, undefined, imageUrl);
+      await this.updateJobStatus(
+        jobId,
+        JobStatus.active,
+        30,
+        undefined,
+        undefined,
+        imageUrl,
+      );
       await job.progress(30);
 
       // Step 2: Validate image
       await this.validateImage(imageBuffer);
-      await this.updateJobStatus(jobId, JobStatus.active, 40, undefined, undefined, imageUrl);
+      await this.updateJobStatus(
+        jobId,
+        JobStatus.active,
+        40,
+        undefined,
+        undefined,
+        imageUrl,
+      );
       await job.progress(30);
 
       // Step 3: Transform image (resize, grayscale, watermark)
       const transformedBuffer = await this.transformImage(imageBuffer);
-      await this.updateJobStatus(jobId, JobStatus.active, 70, undefined, undefined, imageUrl);
+      await this.updateJobStatus(
+        jobId,
+        JobStatus.active,
+        70,
+        undefined,
+        undefined,
+        imageUrl,
+      );
       await job.progress(70);
 
       // Step 4: Upload to Firebase Storage
       const resultUrl = await this.uploadToStorage(jobId, transformedBuffer);
-      await this.updateJobStatus(jobId, JobStatus.active, 90, resultUrl, undefined, imageUrl);
+      await this.updateJobStatus(
+        jobId,
+        JobStatus.active,
+        90,
+        resultUrl,
+        undefined,
+        imageUrl,
+      );
       await job.progress(90);
 
       // Step 5: Mark as completed
-      await this.updateJobStatus(jobId, JobStatus.completed, 100, resultUrl, undefined, imageUrl);
+      await this.updateJobStatus(
+        jobId,
+        JobStatus.completed,
+        100,
+        resultUrl,
+        undefined,
+        imageUrl,
+      );
       await job.progress(100);
 
       Log(
@@ -98,7 +140,7 @@ export class ImageProcessingService {
     try {
       const result = await this.imageValidator.validate(imageUrl, {
         checkContent: true,
-        timeout: 10000,
+        timeout: 30000, // 30 seconds for Google Cloud
         maxSizeInMB: 10,
       });
 
@@ -159,7 +201,7 @@ export class ImageProcessingService {
       const watermarkSvg = Buffer.from(
         `<svg width="${width}" height="${height}">
           <text x="50%" y="95%" font-size="20" fill="rgba(255,255,255,0.5)" text-anchor="middle">
-            Processed by CoGrader
+            Processed by Velrino
           </text>
         </svg>`,
       );
