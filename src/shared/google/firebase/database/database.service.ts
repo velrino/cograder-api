@@ -42,15 +42,15 @@ export class FirebaseDatabaseService implements OnModuleInit {
 
   // Resolve RTDB path by environment to avoid mixing DEV and RELEASE data
   private p(informed: FirebaseDatabasePath): string {
-    const env = GetEnvironment();
+    // const env = GetEnvironment();
 
-    const firebasePath = Object.values(Environments).includes(
-      env as Environments,
-    )
-      ? informed
-      : `DEV_${String(informed).toUpperCase()}`;
+    // const firebasePath = Object.values(Environments).includes(
+    //   env as Environments,
+    // )
+    //   ? informed
+    //   : `DEV_${String(informed).toUpperCase()}`;
 
-    return firebasePath;
+    return String(informed).toUpperCase();
   }
 
   // Set data at the root of a path (no id), with server timestamp
