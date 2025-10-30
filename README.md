@@ -2,9 +2,9 @@
 
 Backend API for real-time image processing using NestJS, BullMQ, and Firebase.
 
-![API Documentation](doc/api.png)
-
 > **Production API:** https://cograder-2057331207.us-central1.run.app
+
+<img width="2992" height="1934" alt="image" src="https://github.com/user-attachments/assets/9ff46605-348b-4cfc-8925-8201281afc50" />
 
 ## 🎯 Features
 
@@ -16,7 +16,8 @@ Backend API for real-time image processing using NestJS, BullMQ, and Firebase.
 
 ## 🏗️ Architecture
 
-![System Architecture](doc/arch.jpg)
+<img width="3381" height="2465" alt="image" src="https://github.com/user-attachments/assets/72f7f598-f856-4e2e-944f-fd07e8300567" />
+
 
 The system consists of:
 
