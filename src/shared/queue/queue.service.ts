@@ -18,9 +18,9 @@ export class QueueService {
 
   private readonly defaultQueueOptions: Bull.JobOptions = {
     // Automatically remove the job from the queue upon successful completion
-    removeOnComplete: false,
+    removeOnComplete: true,
     // Automatically remove the job from the queue upon failure
-    removeOnFail: false,
+    removeOnFail: true,
     // Set the number of retry attempts in case of failure
     attempts: 2,
     // Define a fixed delay of 1 minute (60,000 milliseconds) between retry attempts
