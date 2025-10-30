@@ -25,7 +25,9 @@ export class ImageProcessingService {
     private readonly imageValidator: ImageValidatorService,
   ) {}
 
-  @Process()
+  @Process({
+    concurrency: 10,
+  })
   async processImage(job: Job<IImageProcessingJob>): Promise<void> {
     const { jobId, imageUrl } = job.data;
 

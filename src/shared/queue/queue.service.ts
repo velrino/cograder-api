@@ -34,10 +34,10 @@ export class QueueService {
     jobData: IImageProcessingJob,
   ): Promise<Job<IImageProcessingJob>> {
     try {
-      const job = await this.imageProcessingQueue.add(
-        jobData,
-        this.defaultQueueOptions,
-      );
+      const job = await this.imageProcessingQueue.add(jobData, {
+        ...this.defaultQueueOptions,
+        priority: 1,
+      });
 
       Log(
         LogType.INFO,
