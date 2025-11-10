@@ -42,22 +42,18 @@ export class FirebaseStorageService implements OnModuleInit {
     try {
       const file = this.bucket.file(destination);
 
-      // Upload file (uniform bucket-level access is enabled)
+      // Upload file with public access
       await file.save(buffer, {
         metadata: {
           contentType: metadata?.contentType || 'image/png',
           metadata: metadata?.metadata || {},
         },
         validation: 'md5',
+        public: true, // Make file publicly accessible
       });
 
-      // Generate signed URL (valid for 7 days) since makePublic() doesn't work with uniform bucket-level access
-      const [signedUrl] = await file.getSignedUrl({
-        action: 'read',
-        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      const publicUrl = signedUrl;
+      // Use public URL (no signed URL needed)
+      const publicUrl = `https://storage.googleapis.com/${this.bucket.name}/${destination}`;
 
       Log(
         LogType.INFO,
