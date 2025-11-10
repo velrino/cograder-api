@@ -1,5 +1,22 @@
-import { Body, Controller, Post, Get, Query, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Query,
+  Param,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { CreateJobService } from './create/create.service';
 import { CreateJobDto } from './create/create.dto';
 import { JobResponseDto } from './job.dto';
@@ -9,6 +26,8 @@ import {
   PaginateJobsResponseDto,
 } from './paginate/paginate.dto';
 import { GetJobService } from './get/get.service';
+import { UploadImagesService } from './upload/upload.service';
+import { UploadImagesResponseDto } from './upload/upload.dto';
 
 @ApiTags('jobs')
 @Controller('api/jobs')
@@ -17,6 +36,7 @@ export class JobsController {
     private readonly createJobService: CreateJobService,
     private readonly paginateJobsService: PaginateJobsService,
     private readonly getJobService: GetJobService,
+    private readonly uploadImagesService: UploadImagesService,
   ) {}
 
   @Post()
@@ -84,5 +104,46 @@ export class JobsController {
   })
   async getJob(@Param('id') id: string): Promise<JobResponseDto> {
     return this.getJobService.execute(id);
+  }
+
+  @Post('upload')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload image files',
+    description:
+      'Upload one or more image files (max 10 files, 10MB each). Files are stored in Firebase Storage under uploads folder and return normalized metadata.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Files uploaded successfully',
+    type: UploadImagesResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file type or no files provided',
+  })
+  @ApiResponse({
+    status: 413,
+    description: 'File too large (max 10MB per file)',
+  })
+  async uploadImages(
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<UploadImagesResponseDto> {
+    return this.uploadImagesService.execute(files);
   }
 }

@@ -20,6 +20,13 @@ export class JobResponseDto {
   @ApiProperty({ required: false })
   error?: string;
 
+  @ApiProperty({
+    required: false,
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Batch ID grouping related images together',
+  })
+  batchId?: string;
+
   @ApiProperty({ type: Date })
   createdAt: Date;
 
