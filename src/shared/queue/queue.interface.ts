@@ -1,5 +1,5 @@
 export enum QueuesEnum {
-  IMAGE_PROCESSING = 'IMAGE_PROCESSING_LOCAL',
+  IMAGE_PROCESSING = 'IMAGE_PROCESSING',
 }
 
 export enum QueueStatus {
