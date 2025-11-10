@@ -110,7 +110,7 @@ export class UploadImagesService {
     // Create jobs for all uploaded files using Promise.allSettled for fault tolerance
     // with pLimit to control concurrency (max simultaneous job creations)
     if (uploadedFiles.length > 0) {
-      const limit = pLimit(10); // Limit to concurrent job creations
+      const limit = pLimit(3); // Limit to concurrent job creations
 
       const jobResults = await Promise.allSettled(
         uploadedFiles.map((file) =>
