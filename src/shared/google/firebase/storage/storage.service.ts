@@ -42,18 +42,20 @@ export class FirebaseStorageService implements OnModuleInit {
     try {
       const file = this.bucket.file(destination);
 
-      // Upload file with public access
+      // Upload file (uniform bucket-level access is enabled)
       await file.save(buffer, {
         metadata: {
           contentType: metadata?.contentType || 'image/png',
           metadata: metadata?.metadata || {},
         },
         validation: 'md5',
-        public: true, // Make file publicly accessible
       });
 
-      // Use public URL (no signed URL needed)
-      const publicUrl = `https://storage.googleapis.com/${this.bucket.name}/${destination}`;
+      // Generate signed URL with longer expiration (1 year for processed images)
+      const [signedUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
+      });
 
       Log(
         LogType.INFO,
@@ -63,11 +65,11 @@ export class FirebaseStorageService implements OnModuleInit {
         {
           destination,
           size: buffer.length,
-          publicUrl,
+          url: signedUrl,
         },
       );
 
-      return publicUrl;
+      return signedUrl;
     } catch (error) {
       Log(
         LogType.ERROR,
