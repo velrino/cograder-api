@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  PayloadTooLargeException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { FirebaseStorageService } from 'src/shared/google/firebase/storage/storage.service';
 import { UploadedFileMetadataDto } from './upload.dto';
@@ -10,29 +6,18 @@ import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 import { CreateJobService } from '../create/create.service';
 import * as path from 'path';
 import pLimit from 'p-limit';
+import { UploadMessage, UploadError } from 'src/shared/constants/messages.enum';
+import { ImageValidatorService } from 'src/modules/images/validator/validator.service';
 
 @Injectable()
 export class UploadImagesService {
-  // 10MB limit
-  private readonly MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-  // Allowed image MIME types
-  private readonly ALLOWED_MIME_TYPES = [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-  ];
-
   constructor(
     private readonly firebaseStorageService: FirebaseStorageService,
     private readonly createJobService: CreateJobService,
+    private readonly imageValidatorService: ImageValidatorService,
   ) {}
 
-  async execute(
-    files: Express.Multer.File[],
-  ): Promise<{
+  async execute(files: Express.Multer.File[]): Promise<{
     files: UploadedFileMetadataDto[];
     failed?: string[];
     batchId: string;
@@ -44,11 +29,15 @@ export class UploadImagesService {
       UploadImagesService.name,
       this.execute.name,
       LogAction.STARTED,
-      { fileCount: files.length, batchId },
+      {
+        fileCount: files.length,
+        batchId,
+        message: UploadMessage.BATCH_STARTED,
+      },
     );
 
     if (!files || files.length === 0) {
-      throw new BadRequestException('No files provided');
+      throw new BadRequestException(UploadError.NO_FILES_PROVIDED);
     }
 
     const uploadedFiles: UploadedFileMetadataDto[] = [];
@@ -57,13 +46,12 @@ export class UploadImagesService {
     // Process each file
     for (const file of files) {
       try {
-        // Validate file
-        this.validateFile(file);
+        // Validate file using ImageValidatorService
+        this.imageValidatorService.validateUploadedFile(file, 10);
 
-        // Generate storage path: uploads/timestamp-originalname (sem data)
-        const timestamp = Date.now();
+        // Generate storage path: uploads/batchId/originalname (sem data)
         const sanitizedFilename = this.sanitizeFilename(file.originalname);
-        const storagePath = `uploads/${timestamp}-${sanitizedFilename}`;
+        const storagePath = `uploads/${batchId}/${sanitizedFilename}`;
 
         // Upload to Firebase Storage
         const publicUrl = await this.firebaseStorageService.uploadFile(
@@ -95,6 +83,7 @@ export class UploadImagesService {
           this.execute.name,
           LogAction.SUCCESS,
           {
+            message: UploadMessage.FILE_UPLOADED,
             filename: file.originalname,
             size: file.size,
             storagePath,
@@ -108,6 +97,7 @@ export class UploadImagesService {
           this.execute.name,
           LogAction.FAILED,
           {
+            message: UploadError.FILE_UPLOAD_FAILED,
             filename: file.originalname,
             error: error.message,
             batchId,
@@ -118,9 +108,9 @@ export class UploadImagesService {
     }
 
     // Create jobs for all uploaded files using Promise.allSettled for fault tolerance
-    // with pLimit to control concurrency (max 5 simultaneous job creations)
+    // with pLimit to control concurrency (max simultaneous job creations)
     if (uploadedFiles.length > 0) {
-      const limit = pLimit(5); // Limit to 5 concurrent job creations
+      const limit = pLimit(10); // Limit to concurrent job creations
 
       const jobResults = await Promise.allSettled(
         uploadedFiles.map((file) =>
@@ -144,7 +134,7 @@ export class UploadImagesService {
           this.execute.name,
           LogAction.SUCCESS,
           {
-            message: 'Jobs created for uploaded files',
+            message: UploadMessage.JOBS_CREATED,
             batchId,
             jobCount: successful.length,
           },
@@ -158,10 +148,12 @@ export class UploadImagesService {
           this.execute.name,
           LogAction.FAILED,
           {
-            message: 'Some jobs failed to create',
+            message: UploadMessage.JOBS_PARTIAL_FAILURE,
             batchId,
             failedCount: failed.length,
-            errors: failed.map((r) => (r as PromiseRejectedResult).reason?.message),
+            errors: failed.map(
+              (r) => (r as PromiseRejectedResult).reason?.message,
+            ),
           },
         );
         // Don't throw - files were uploaded successfully, partial job creation is acceptable
@@ -182,27 +174,6 @@ export class UploadImagesService {
     }
 
     return response;
-  }
-
-  private validateFile(file: Express.Multer.File): void {
-    // Check if file exists
-    if (!file || !file.buffer) {
-      throw new BadRequestException('Invalid file');
-    }
-
-    // Check file size
-    if (file.size > this.MAX_FILE_SIZE) {
-      throw new PayloadTooLargeException(
-        `File ${file.originalname} exceeds maximum size of 10MB`,
-      );
-    }
-
-    // Check MIME type
-    if (!this.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new BadRequestException(
-        `File ${file.originalname} has unsupported type. Allowed types: ${this.ALLOWED_MIME_TYPES.join(', ')}`,
-      );
-    }
   }
 
   private sanitizeFilename(filename: string): string {

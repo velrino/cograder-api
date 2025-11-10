@@ -1,5 +1,12 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { ImageProcessingError } from 'src/shared/constants/messages.enum';
+import {
+  Injectable,
+  BadRequestException,
+  PayloadTooLargeException,
+} from '@nestjs/common';
+import {
+  ImageProcessingError,
+  UploadError,
+} from 'src/shared/constants/messages.enum';
 
 export interface ImageValidationOptions {
   checkContent?: boolean; // If true, downloads and returns buffer
@@ -103,6 +110,43 @@ export class ImageValidatorService {
       }
 
       throw new BadRequestException(ImageProcessingError.DOWNLOAD_FAILED);
+    }
+  }
+
+  /**
+   * Validate uploaded file (already in memory)
+   */
+  validateUploadedFile(
+    file: Express.Multer.File,
+    maxSizeInMB: number = 10,
+  ): void {
+    // Check if file exists
+    if (!file || !file.buffer) {
+      throw new BadRequestException(UploadError.INVALID_FILE);
+    }
+
+    // Allowed image MIME types
+    const validImageTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
+
+    // Check MIME type
+    if (!validImageTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `${UploadError.INVALID_FILE_TYPE}: ${file.originalname} has unsupported type. Allowed: ${validImageTypes.join(', ')}`,
+      );
+    }
+
+    // Check file size
+    const sizeInMB = file.size / (1024 * 1024);
+    if (sizeInMB > maxSizeInMB) {
+      throw new PayloadTooLargeException(
+        `${UploadError.FILE_TOO_LARGE}: ${file.originalname} exceeds maximum size of ${maxSizeInMB}MB`,
+      );
     }
   }
 }
