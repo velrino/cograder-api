@@ -7,6 +7,7 @@ import {
   ImageProcessingError,
   UploadError,
 } from 'src/shared/constants/messages.enum';
+import { Log, LogAction, LogType } from 'src/shared/log/log.helper';
 
 export interface ImageValidationOptions {
   checkContent?: boolean; // If true, downloads and returns buffer
@@ -96,6 +97,18 @@ export class ImageValidatorService {
       };
     } catch (error) {
       clearTimeout(timeoutId);
+
+      Log(
+        LogType.ERROR,
+        ImageValidatorService.name,
+        this.validate.name,
+        LogAction.FAILED,
+        {
+          error,
+          imageUrl,
+          options,
+        },
+      );
 
       if (error instanceof BadRequestException) {
         throw error;
