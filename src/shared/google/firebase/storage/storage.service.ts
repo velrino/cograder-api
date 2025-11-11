@@ -51,13 +51,11 @@ export class FirebaseStorageService implements OnModuleInit {
         validation: 'md5',
       });
 
-      // Generate signed URL (valid for 7 days) since makePublic() doesn't work with uniform bucket-level access
+      // Generate signed URL with longer expiration (1 year for processed images)
       const [signedUrl] = await file.getSignedUrl({
         action: 'read',
-        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+        expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
       });
-
-      const publicUrl = signedUrl;
 
       Log(
         LogType.INFO,
@@ -67,11 +65,11 @@ export class FirebaseStorageService implements OnModuleInit {
         {
           destination,
           size: buffer.length,
-          publicUrl,
+          url: signedUrl,
         },
       );
 
-      return publicUrl;
+      return signedUrl;
     } catch (error) {
       Log(
         LogType.ERROR,

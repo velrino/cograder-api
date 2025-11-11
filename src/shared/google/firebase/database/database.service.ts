@@ -93,6 +93,30 @@ export class FirebaseDatabaseService implements OnModuleInit {
     }
   }
 
+  // Update specific fields without replacing the entire document
+  async update(
+    path: FirebaseDatabasePath,
+    id: string,
+    data: any,
+  ): Promise<void> {
+    try {
+      const ref = this.database.ref(`${this.p(path)}/${id}`);
+      return await ref.update({
+        ...data,
+        timestamp: admin.database.ServerValue.TIMESTAMP,
+      });
+    } catch (error) {
+      Log(
+        LogType.ERROR,
+        FirebaseDatabaseService.name,
+        this.update.name,
+        LogAction.FAILED,
+        { data, error },
+      );
+      throw error;
+    }
+  }
+
   // Add a new record with auto-generated ID
   async addRecord(path: FirebaseDatabasePath, data: any): Promise<string> {
     try {

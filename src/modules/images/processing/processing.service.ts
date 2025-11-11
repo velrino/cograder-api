@@ -292,7 +292,8 @@ export class ImageProcessingService {
         updateData.error = error;
       }
 
-      await this.firebaseDatabase.save(
+      // Use update() instead of save() to preserve batchId and other fields
+      await this.firebaseDatabase.update(
         FirebaseDatabasePath.IMAGES,
         jobId,
         updateData,

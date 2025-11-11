@@ -36,6 +36,7 @@ export class CreateJobService {
         progress: 0,
         createdAt: now,
         updatedAt: now,
+        ...(body.batchId && { batchId: body.batchId }), // Only add if provided
       };
 
       // Save to Firebase Realtime Database
@@ -56,7 +57,11 @@ export class CreateJobService {
         CreateJobService.name,
         this.execute.name,
         LogAction.SUCCESS,
-        { jobId, imageUrl: body.imageUrl },
+        {
+          jobId,
+          imageUrl: body.imageUrl,
+          ...(body.batchId && { batchId: body.batchId }),
+        },
       );
 
       return jobData;
